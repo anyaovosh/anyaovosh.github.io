@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>anyaovosh</title>
+
+  <!-- Превью ссылки: это показывают Discord, Telegram и др., когда ты кидаешь ссылку -->
+  <meta name="description" content="Геймер, учусь вайбкодингу. Radmir RP, CS2, Dota 2 и не только.">
+  <meta property="og:title" content="anyaovosh">
+  <meta property="og:description" content="Геймер, учусь вайбкодингу. Radmir RP, CS2, Dota 2 и не только.">
+  <meta property="og:type" content="website">
+  <meta name="theme-color" content="#ffffff"> <!-- цвет полоски слева в Discord -->
+
+  <!-- ============ СТИЛИ (CSS) — отвечают за то, КАК всё выглядит ============ -->
+  <style>
+    /* Переменные: поменяй цвет здесь, и он сменится на всём сайте */
+    :root {
+      --bg: #050505;
+      --card: #0e0e0e;
+      --border: #1f1f1f;
+      --text: #ededed;
+      --muted: #7a7a7a;
+      --accent: #ffffff;   /* единственный «акцент» — чистый белый */
+      --ease: cubic-bezier(0.22, 1, 0.36, 1); /* плавная кривая для всех анимаций */
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Холст с частицами лежит под всем контентом */
+    #stars {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+    }
+
+    /* Мягкое пятно света, которое плавно следует за мышкой */
+    #glow {
+      position: fixed;
+      width: 600px;
+      height: 600px;
+      left: 0;
+      top: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.07) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+      transform: translate(-50%, -50%);
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 16px;
+    }
+
+    /* ---------- Первый экран ---------- */
+    .hero {
+      position: relative; /* чтобы иконка прокрутки встала внизу первого экрана */
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.5rem, 9vw, 5.5rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      /* Серебристый перелив, который медленно «проезжает» по тексту */
+      background: linear-gradient(110deg, #6b6b6b 20%, #ffffff 40%, #6b6b6b 60%);
+      background-size: 250% 100%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shine 6s linear infinite;
+    }
+    @keyframes shine {
+      from { background-position: 100% 0; }
+      to   { background-position: -150% 0; }
+    }
+
+    .typing {
+      font-size: 1.2rem;
+      color: var(--muted);
+      min-height: 2em;
+      margin-top: 8px;
+    }
+    .typing::after {
+      content: "▌";
+      color: var(--accent);
+      animation: blink 1s infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+
+    .scroll-hint {
+      position: absolute;
+      bottom: 30px;
+      width: 26px;
+      height: 42px;
+      border: 2px solid var(--muted);
+      border-radius: 14px;
+    }
+    /* «Колёсико мышки» внутри иконки, которое катится вниз */
+    .scroll-hint::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 8px;
+      width: 4px;
+      height: 8px;
+      margin-left: -2px;
+      background: var(--accent);
+      border-radius: 2px;
+      animation: wheel 2s var(--ease) infinite;
+    }
+    @keyframes wheel {
+      0%   { opacity: 0; transform: translateY(0); }
+      30%  { opacity: 1; }
+      100% { opacity: 0; transform: translateY(14px); }
+    }
+
+    /* ---------- Секции ---------- */
+    section { padding: 80px 0; }
+
+    h2 {
+      font-size: 2rem;
+      margin-bottom: 32px;
+      font-weight: 700;
+    }
+    h2 span { color: var(--muted); font-weight: 300; }
+
+    /* ---------- Карточки игр ---------- */
+    .games {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 20px;
+      perspective: 1000px; /* нужно для 3D-наклона карточек */
+    }
+
+    .game {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      overflow: hidden;
+      transform-style: preserve-3d;
+      transition: transform 0.6s var(--ease), box-shadow 0.6s var(--ease), border-color 0.6s;
+    }
+    .game:hover {
+      border-color: #3a3a3a;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8), 0 0 30px rgba(255, 255, 255, 0.06);
+    }
+
+    .game .cover {
+      height: 120px;
+      overflow: hidden;
+      position: relative;
+      background: #151515;
+    }
+    /* Обложка чёрно-белая, при наведении плавно становится цветной */
+    .game .cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: grayscale(1) brightness(0.7);
+      transform: scale(1.05);
+      transition: filter 0.8s var(--ease), transform 0.8s var(--ease);
+    }
+    .game:hover .cover img {
+      filter: grayscale(0) brightness(1);
+      transform: scale(1.12);
+    }
+    /* Обложка-надпись для игр, у которых нет картинки в Steam */
+    .game .cover.text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      color: #555;
+      transition: color 0.8s var(--ease), letter-spacing 0.8s var(--ease);
+    }
+    .game:hover .cover.text {
+      color: #fff;
+      letter-spacing: 0.25em;
+    }
+
+    /* Главная игра занимает две колонки (на телефоне — одну) */
+    .main-game { grid-column: span 2; }
+    @media (max-width: 520px) { .main-game { grid-column: auto; } }
+
+    .game .cover.radmir {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      background: radial-gradient(circle at center, #1c1c1c, #0a0a0a 70%);
+    }
+    /* Значок: в покое белый силуэт, при наведении — родные цвета и лёгкий поворот */
+    .game .cover .radmir-logo {
+      width: 56px;
+      height: auto;
+      object-fit: contain;
+      filter: grayscale(1) brightness(3);
+      transform: none;
+      animation: logo-float 4s ease-in-out infinite;
+    }
+    .game:hover .cover .radmir-logo {
+      filter: grayscale(0) brightness(1) drop-shadow(0 0 18px rgba(255, 140, 30, 0.5));
+      transform: rotate(-8deg) scale(1.15);
+    }
+    @keyframes logo-float {
+      0%, 100% { translate: 0 0; }
+      50%      { translate: 0 -4px; }
+    }
+    .radmir-name {
+      font-size: 1.6rem;
+      font-weight: 900;
+      letter-spacing: 0.12em;
+      color: #ddd;
+      transition: letter-spacing 0.8s var(--ease), color 0.8s;
+    }
+    .game:hover .radmir-name { letter-spacing: 0.2em; color: #fff; }
+
+    .game .info { padding: 16px; }
+    .game h3 { font-size: 1.05rem; }
+    .game p { color: var(--muted); font-size: 0.9rem; }
+    .game .hours {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 0.75rem;
+      color: var(--text);
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    /* ---------- Путь в ИИ (прогресс) ---------- */
+    .skill { margin-bottom: 22px; }
+    .skill-top {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+    .skill-top span:last-child { color: var(--muted); }
+    .bar {
+      height: 6px;
+      background: #161616;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .bar div {
+      height: 100%;
+      width: 0;  /* стартует с нуля, JS «заполняет» при прокрутке */
+      background: linear-gradient(90deg, #555, #fff);
+      border-radius: 6px;
+      transition: width 1.8s var(--ease);
+    }
+
+    /* ---------- Ссылки ---------- */
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .links a {
+      flex: 1 1 200px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 18px 22px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: border-color 0.5s var(--ease), transform 0.5s var(--ease), background 0.5s;
+    }
+    .links a:hover {
+      border-color: #444;
+      background: #131313;
+      transform: translateY(-4px);
+    }
+
+    /* Иконки: тонкие белые линии */
+    .icon {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.6;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      animation: idle 4s ease-in-out infinite;
+      transition: transform 0.6s var(--ease);
+    }
+    /* Иконки слегка «дышат» сами по себе, каждая со своей задержкой */
+    .links a:nth-child(2) .icon { animation-delay: -1.3s; }
+    .links a:nth-child(3) .icon { animation-delay: -2.6s; }
+    @keyframes idle {
+      0%, 100% { translate: 0 0; }
+      50%      { translate: 0 -3px; }
+    }
+
+    /* У каждой иконки своя анимация при наведении */
+    .links a:hover .icon-steam    { transform: rotate(-12deg) scale(1.2); }
+    .links a:hover .icon-github   { transform: rotateY(180deg) scale(1.15); }
+
+    /* Иконка «прорисовывается» линией при наведении */
+    .icon path, .icon circle, .icon rect, .icon polyline {
+      stroke-dasharray: 100;
+      stroke-dashoffset: 0;
+    }
+    .links a:hover .icon path,
+    .links a:hover .icon circle,
+    .links a:hover .icon rect,
+    .links a:hover .icon polyline {
+      animation: draw 0.9s var(--ease);
+    }
+    @keyframes draw {
+      from { stroke-dashoffset: 100; }
+      to   { stroke-dashoffset: 0; }
+    }
+
+    .arrow {
+      margin-left: auto;
+      color: var(--muted);
+      transition: transform 0.5s var(--ease), color 0.5s;
+    }
+    .links a:hover .arrow {
+      transform: translateX(5px);
+      color: var(--text);
+    }
+
+    /* ---------- Плитки со статистикой ---------- */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 16px;
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px 20px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.5s var(--ease), transform 0.5s var(--ease);
+    }
+    .stat:hover {
+      border-color: #3a3a3a;
+      transform: translateY(-4px);
+    }
+    /* Блик, который проезжает по плитке при наведении */
+    .stat::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.06) 50%, transparent 70%);
+      transform: translateX(-100%);
+      transition: transform 0.9s var(--ease);
+    }
+    .stat:hover::after { transform: translateX(100%); }
+    .stat .num {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.1;
+    }
+    .stat .label {
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    section:last-of-type { padding-bottom: 120px; }
+
+    /* Плавное появление блоков при прокрутке */
+    .reveal {
+      opacity: 0;
+      transform: translateY(40px);
+      transition: opacity 1.2s var(--ease), transform 1.2s var(--ease);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============ РАЗМЕТКА (HTML) — отвечает за то, ЧТО есть на странице ============ -->
+
+  <canvas id="stars"></canvas>
+  <div id="glow"></div>
+
+  <main>
+    <!-- Первый экран -->
+    <header class="hero">
+      <h1>anyaovosh</h1>
+      <div class="typing" id="typing"></div>
+      <div class="scroll-hint"></div>
+    </header>
+
+    <!-- Статистика из профиля Steam. Числа «докручиваются» до data-value при прокрутке -->
+    <section class="reveal">
+      <h2>В цифрах <span>/ steam</span></h2>
+      <div class="stats">
+        <div class="stat"><div class="num" data-value="77">0</div><div class="label">игр в библиотеке</div></div>
+        <div class="stat"><div class="num" data-value="952">0</div><div class="label">достижений</div></div>
+        <div class="stat"><div class="num" data-value="10">0</div><div class="label">уровень Steam</div></div>
+        <div class="stat"><div class="num" data-value="37">0</div><div class="label">друзей</div></div>
+      </div>
+    </section>
+
+    <!-- Любимые игры. Картинки берутся из Steam по номеру игры (appid) -->
+    <section class="reveal">
+      <h2>Мои игры <span>/ steam</span></h2>
+      <div class="games">
+        <!-- Главная игра: карточка шире остальных, со значком Radmir -->
+        <div class="game main-game">
+          <div class="cover radmir">
+            <img class="radmir-logo" src="https://radmir.online/images/logos/logo.svg" alt="Radmir">
+            <span class="radmir-name">RADMIR</span>
+          </div>
+          <div class="info">
+            <h3>Radmir RP</h3>
+            <p>Кайфую</p>
+            <span class="hours">★ основная</span>
+          </div>
+        </div>
+        <div class="game">
+          <div class="cover"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/730/header.jpg" alt="Counter-Strike 2"></div>
+          <div class="info">
+            <h3>Counter-Strike 2</h3>
+            <p>Шутер, где решает каждая секунда</p>
+            <span class="hours">с друзьями</span>
+          </div>
+        </div>
+        <div class="game">
+          <div class="cover"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/570/header.jpg" alt="Dota 2"></div>
+          <div class="info">
+            <h3>Dota 2</h3>
+            <p>Бесконечная стратегия и нервы</p>
+            <span class="hours">под настроение</span>
+          </div>
+        </div>
+        <div class="game">
+          <!-- Fortnite нет в Steam, поэтому вместо картинки — надпись -->
+          <div class="cover text">FORTNITE</div>
+          <div class="info">
+            <h3>Fortnite</h3>
+            <p>Королевская битва и стройка на скорость</p>
+            <span class="hours">epic games</span>
+          </div>
+        </div>
+        <div class="game">
+          <div class="cover"><img src="https://cdn.cloudflare.steamstatic.com/steam/apps/271590/header.jpg" alt="GTA V"></div>
+          <div class="info">
+            <h3>GTA V</h3>
+            <p>Открытый мир и хаос</p>
+            <span class="hours">для души</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Путь в ИИ: проценты меняй по мере обучения -->
+    <section class="reveal">
+      <h2>Мой путь в ИИ <span>/ прогресс</span></h2>
+      <div class="skill">
+        <div class="skill-top"><span>Вайбкодинг (сайты с ИИ)</span><span>15%</span></div>
+        <div class="bar"><div data-width="15%"></div></div>
+      </div>
+      <div class="skill">
+        <div class="skill-top"><span>HTML и CSS</span><span>10%</span></div>
+        <div class="bar"><div data-width="10%"></div></div>
+      </div>
+      <div class="skill">
+        <div class="skill-top"><span>JavaScript</span><span>5%</span></div>
+        <div class="bar"><div data-width="5%"></div></div>
+      </div>
+    </section>
+
+    <!-- Ссылки: в href="#" вставь свои реальные адреса -->
+    <section class="reveal">
+      <h2>Где меня найти <span>/ ссылки</span></h2>
+      <div class="links">
+        <a href="https://steamcommunity.com/profiles/76561199056540228" target="_blank">
+          <!-- Иконка геймпада -->
+          <svg class="icon icon-steam" viewBox="0 0 24 24">
+            <path d="M6 9h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L15 14H9l-1.6 1.8A3 3 0 0 1 2 14v-1a4 4 0 0 1 4-4z"/>
+            <path d="M7 11.5v3M5.5 13h3"/>
+            <circle cx="16" cy="12" r="0.6"/>
+            <circle cx="18" cy="13.5" r="0.6"/>
+          </svg>
+          Steam <span class="arrow">→</span>
+        </a>
+        <a href="#" target="_blank">
+          <!-- Иконка кода -->
+          <svg class="icon icon-github" viewBox="0 0 24 24">
+            <polyline points="8 6 2 12 8 18"/>
+            <polyline points="16 6 22 12 16 18"/>
+            <path d="M14 4 10 20"/>
+          </svg>
+          GitHub <span class="arrow">→</span>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- ============ СКРИПТЫ (JavaScript) — отвечают за то, как всё ДВИГАЕТСЯ ============ -->
+  <script>
+    // ---------- 1. Эффект печатной машинки ----------
+    const phrases = [
+      "геймер",
+      "учусь вайбкодингу",
+      "живу на Radmir RP",
+      "ночные катки — лучшие катки"
+    ];
+    const typingEl = document.getElementById("typing");
+    let phraseIndex = 0, charIndex = 0, deleting = false;
+
+    function type() {
+      const current = phrases[phraseIndex];
+      typingEl.textContent = current.slice(0, charIndex);
+
+      if (!deleting && charIndex < current.length) {
+        charIndex++;
+        setTimeout(type, 80);
+      } else if (!deleting) {
+        deleting = true;
+        setTimeout(type, 1500); // пауза, когда фраза напечатана
+      } else if (charIndex > 0) {
+        charIndex--;
+        setTimeout(type, 40);
+      } else {
+        deleting = false;
+        phraseIndex = (phraseIndex + 1) % phrases.length;
+        setTimeout(type, 300);
+      }
+    }
+    type();
+
+    // ---------- 2. Звёздная пыль ----------
+    // Каждая частица имеет «глубину» (z): дальние мельче, тусклее и медленнее,
+    // ближние крупнее и сильнее смещаются за мышкой — получается объём (параллакс).
+    const canvas = document.getElementById("stars");
+    const ctx = canvas.getContext("2d");
+    const glow = document.getElementById("glow");
+
+    const mouse  = { x: innerWidth / 2, y: innerHeight / 2 }; // где мышка на самом деле
+    const smooth = { x: innerWidth / 2, y: innerHeight / 2 }; // где она «плавно» сейчас
+    let particles = [];
+
+    function resize() {
+      canvas.width = innerWidth;
+      canvas.height = innerHeight;
+      const count = Math.floor((canvas.width * canvas.height) / 6000);
+      particles = Array.from({ length: count }, () => {
+        const z = Math.random(); // 0 = далеко, 1 = близко
+        return {
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          z,
+          size: 0.3 + z * 1.6,
+          speed: 0.05 + z * 0.25,
+          angle: Math.random() * Math.PI * 2, // направление дрейфа
+          twinkle: Math.random() * Math.PI * 2, // фаза мерцания
+          pushX: 0, pushY: 0 // насколько мышка «раздвинула» частицу
+        };
+      });
+    }
+    addEventListener("resize", resize);
+    addEventListener("mousemove", e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    resize();
+
+    function draw(time) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Плавно догоняем мышку (10% расстояния за кадр) — отсюда мягкость движения
+      smooth.x += (mouse.x - smooth.x) * 0.1;
+      smooth.y += (mouse.y - smooth.y) * 0.1;
+      glow.style.left = smooth.x + "px";
+      glow.style.top = smooth.y + "px";
+
+      // Смещение всей сцены от центра экрана для параллакса
+      const offsetX = (smooth.x - canvas.width / 2) * 0.03;
+      const offsetY = (smooth.y - canvas.height / 2) * 0.03;
+
+      for (const p of particles) {
+        // Медленный дрейф, направление чуть «гуляет»
+        p.angle += (Math.random() - 0.5) * 0.02;
+        p.x += Math.cos(p.angle) * p.speed;
+        p.y += Math.sin(p.angle) * p.speed - 0.05 * p.z; // лёгкое всплытие вверх
+
+        // Если улетела за экран — появляется с другой стороны
+        if (p.x < -10) p.x = canvas.width + 10;
+        if (p.x > canvas.width + 10) p.x = -10;
+        if (p.y < -10) p.y = canvas.height + 10;
+        if (p.y > canvas.height + 10) p.y = -10;
+
+        const drawX = p.x + offsetX * p.z;
+        const drawY = p.y + offsetY * p.z;
+
+        // Мышка мягко расталкивает частицы рядом, потом они плавно возвращаются
+        const dx = drawX - smooth.x;
+        const dy = drawY - smooth.y;
+        const dist = Math.hypot(dx, dy);
+        const radius = 140;
+        if (dist < radius) {
+          const force = (1 - dist / radius) * 25 * p.z;
+          p.pushX += ((dx / dist) * force - p.pushX) * 0.08;
+          p.pushY += ((dy / dist) * force - p.pushY) * 0.08;
+        } else {
+          p.pushX *= 0.95;
+          p.pushY *= 0.95;
+        }
+
+        // Мерцание + частицы возле мышки светятся ярче
+        const flicker = 0.6 + Math.sin(time * 0.002 + p.twinkle) * 0.4;
+        const near = dist < radius * 1.5 ? (1 - dist / (radius * 1.5)) * 0.6 : 0;
+        const alpha = Math.min(1, (0.15 + p.z * 0.6) * flicker + near);
+
+        ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+        ctx.beginPath();
+        ctx.arc(drawX + p.pushX, drawY + p.pushY, p.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      requestAnimationFrame(draw); // повторяем ~60 раз в секунду
+    }
+    requestAnimationFrame(draw);
+
+    // ---------- 3. 3D-наклон карточек игр за мышкой ----------
+    document.querySelectorAll(".game").forEach(card => {
+      card.addEventListener("mousemove", e => {
+        const r = card.getBoundingClientRect();
+        const x = (e.clientX - r.left) / r.width - 0.5;  // от -0.5 до 0.5
+        const y = (e.clientY - r.top) / r.height - 0.5;
+        card.style.transform = `rotateY(${x * 14}deg) rotateX(${-y * 14}deg) translateY(-6px)`;
+      });
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "";
+      });
+    });
+
+    // ---------- 4. Счётчик: число плавно растёт от 0 до нужного значения ----------
+    function countUp(el) {
+      if (el.dataset.done) return; // считаем только один раз
+      el.dataset.done = "1";
+      const target = Number(el.dataset.value);
+      const duration = 1800;
+      const start = performance.now();
+      function step(now) {
+        const t = Math.min(1, (now - start) / duration);
+        const eased = 1 - Math.pow(1 - t, 4); // сначала быстро, в конце медленно
+        el.textContent = Math.round(target * eased);
+        if (t < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    }
+
+    // ---------- 5. Появление секций, полоски и счётчики при прокрутке ----------
+    const observer = new IntersectionObserver(entries => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        entry.target.classList.add("visible");
+        entry.target.querySelectorAll(".bar div").forEach(bar => {
+          bar.style.width = bar.dataset.width;
+        });
+        entry.target.querySelectorAll(".num").forEach(countUp);
+      }
+    }, { threshold: 0.2 });
+
+    document.querySelectorAll(".reveal").forEach(el => observer.observe(el));
+  </script>
+</body>
+</html>
